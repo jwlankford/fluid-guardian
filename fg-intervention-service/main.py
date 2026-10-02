@@ -1,26 +1,23 @@
-Scaffold a FastAPI microservice called “Intervention Service”.
+from contextlib import asynccontextmanager
 
-Structure:
-- main.py
-- routers/
-    - decide.py (POST /intervention/decide)
-    - act.py (POST /intervention/act)
-    - history.py (GET /intervention/{user_id}/history)
-- models/
-    - decision.py
-    - action.py
-- db/
-    - base.py
-    - session.py
-- utils/
-    - message_templates.py
-    - delivery.py
+from fastapi import FastAPI
 
-Implement placeholder decision logic based on risk_level.  
-Implement placeholder message rendering.  
-Use SQLAlchemy + Pydantic.  
-Import shared models from fg-core.
-
-# generate the scaffold
+from fg_core.db.session import create_all
+from routers import act, decide, history
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
+
+
+app = FastAPI(title="Intervention Service", lifespan=lifespan)
+app.include_router(decide.router)
+app.include_router(act.router)
+app.include_router(history.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "intervention"}

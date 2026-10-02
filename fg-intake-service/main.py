@@ -1,24 +1,24 @@
-Scaffold a FastAPI microservice called “Intake Service” with the following structure:
+from contextlib import asynccontextmanager
 
-- main.py with FastAPI app and router includes
-- routers/
-    - text.py (POST /intake/text)
-    - image.py (POST /intake/image)
-    - barcode.py (POST /intake/barcode)
-    - summary.py (GET /intake/{user_id}/today)
-- models/
-    - fluid_event.py (Pydantic + SQLAlchemy models)
-- db/
-    - base.py
-    - session.py
-- utils/
-    - text_parser.py
-    - image_classifier.py
-    - barcode_lookup.py
+from fastapi import FastAPI
 
-Use SQLAlchemy + Pydantic.  
-Use uvicorn entrypoint.  
-Import shared models from fg-core when possible.  
-Create placeholder functions for parsing, classification, and barcode lookup.
+from fg_core.db.session import create_all
+from routers import barcode, image, summary, text
 
-# generate the scaffold
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
+
+
+app = FastAPI(title="Intake Service", lifespan=lifespan)
+app.include_router(text.router)
+app.include_router(image.router)
+app.include_router(barcode.router)
+app.include_router(summary.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "intake"}

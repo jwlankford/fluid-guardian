@@ -1,21 +1,21 @@
-Scaffold a FastAPI microservice called “Nutrition Service” for hidden fluid analysis.
+from contextlib import asynccontextmanager
 
-Structure:
-- main.py
-- routers/
-    - analyze.py (POST /nutrition/estimate)
-- models/
-    - hidden_fluid.py
-- db/
-    - base.py
-    - session.py
-- utils/
-    - hidden_fluid_rules.py
-    - food_lookup.py
+from fastapi import FastAPI
 
-Implement endpoint that accepts a fluid_event_id and returns hidden_fluid_ml.  
-Use placeholder logic for hidden fluid estimation.  
-Use SQLAlchemy + Pydantic.  
-Import shared models from fg-core.
+from fg_core.db.session import create_all
+from routers import analyze
 
-# generate the scaffold
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
+
+
+app = FastAPI(title="Nutrition Service", lifespan=lifespan)
+app.include_router(analyze.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "nutrition"}

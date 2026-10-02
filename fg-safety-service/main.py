@@ -1,22 +1,22 @@
-Scaffold a FastAPI microservice called “Safety Service”.
+from contextlib import asynccontextmanager
 
-Structure:
-- main.py
-- routers/
-    - evaluate.py (POST /safety/evaluate)
-    - status.py (GET /safety/{user_id}/status)
-- models/
-    - escalation.py
-- db/
-    - base.py
-    - session.py
-- utils/
-    - red_flag_rules.py
-    - symptom_scoring.py
-    - escalation_logic.py
+from fastapi import FastAPI
 
-Implement placeholder red-flag detection and escalation logic.  
-Use SQLAlchemy + Pydantic.  
-Import shared models from fg-core.
+from fg_core.db.session import create_all
+from routers import evaluate, status
 
-# generate the scaffold
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
+
+
+app = FastAPI(title="Safety Service", lifespan=lifespan)
+app.include_router(evaluate.router)
+app.include_router(status.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "safety"}

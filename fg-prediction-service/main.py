@@ -1,28 +1,22 @@
-Scaffold a FastAPI microservice called “Prediction Service”.
+from contextlib import asynccontextmanager
 
-Structure:
-- main.py
-- routers/
-    - predict.py (POST /predict/daily)
-    - history.py (GET /predict/{user_id}/history)
-- models/
-    - prediction.py
-- db/
-    - base.py
-    - session.py
-- utils/
-    - risk_engine.py
-    - time_projection.py
-    - behavior_adjustments.py
+from fastapi import FastAPI
 
-Implement placeholder risk logic:
-- compute_risk()
-- compute_probability()
-- estimate_exceed_time()
-- identify_drivers()
+from fg_core.db.session import create_all
+from routers import history, predict
 
-Use SQLAlchemy + Pydantic.  
-Import shared models from fg-core.
 
-# generate the scaffold
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
 
+
+app = FastAPI(title="Prediction Service", lifespan=lifespan)
+app.include_router(predict.router)
+app.include_router(history.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "prediction"}
