@@ -138,11 +138,11 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background: white;
   box-shadow: 0 1px 4px rgba(2, 132, 199, 0.1);
-  border-top: 4px solid #7dd3fc;
+  border-top: 4px solid #00CFFF;
 }
 
 h2 {
-  color: #0369a1;
+  color: #007BFF;
   margin: 0 0 8px;
 }
 
@@ -173,13 +173,13 @@ p {
   max-width: 400px;
   border-radius: 8px;
   background: #000;
-  border: 2px solid #0284c7;
+  border: 2px solid #007BFF;
 }
 
 .action-btn {
   display: inline-block;
   padding: 8px 16px;
-  background: #0284c7;
+  background: #007BFF;
   color: white;
   border: none;
   border-radius: 6px;
@@ -191,16 +191,16 @@ p {
 }
 
 .action-btn:hover {
-  background: #0369a1;
+  background: #007BFF;
 }
 
 .action-btn.secondary {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #F8F9FA;
+  color: #007BFF;
 }
 
 .action-btn.secondary:hover {
-  background: #bae6fd;
+  background: #C0C0C0;
 }
 
 .hidden-input {
@@ -213,7 +213,7 @@ p {
 }
 
 .status {
-  color: #0369a1;
+  color: #007BFF;
   font-weight: 500;
   margin-top: 12px;
 }
@@ -221,10 +221,10 @@ p {
 .result {
   margin-top: 16px;
   padding: 12px;
-  background: #e0f2fe;
+  background: #F8F9FA;
   border-radius: 6px;
   overflow-x: auto;
-  border: 1px solid #bae6fd;
+  border: 1px solid #C0C0C0;
 }
 
 pre {

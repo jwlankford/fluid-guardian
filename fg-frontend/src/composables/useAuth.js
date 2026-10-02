@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider, signInWithPopup, signOut as firebaseSignOut } from '../services/firebase.js';
 
 const isLoggedIn = ref(false);
@@ -9,10 +9,11 @@ const userProfile = ref(null);
 onAuthStateChanged(auth, (user) => {
   if (user) {
     userProfile.value = {
-      name: user.displayName,
+      uid: user.uid,
+      name: user.displayName || user.email?.split('@')[0],
       email: user.email,
       picture: user.photoURL,
-      firstName: user.displayName?.split(' ')[0] || 'User'
+      firstName: (user.displayName || user.email?.split('@')[0])?.split(' ')[0] || 'User'
     };
     isLoggedIn.value = true;
   } else {
@@ -27,6 +28,25 @@ export function useAuth() {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Firebase Login Error:", error);
+      throw error;
+    }
+  };
+
+  const loginWithEmail = async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Firebase Email Login Error:", error);
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (email, password) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Firebase Registration Error:", error);
+      throw error;
     }
   };
 
@@ -42,6 +62,8 @@ export function useAuth() {
     isLoggedIn,
     userProfile,
     login,
+    loginWithEmail,
+    registerWithEmail,
     logout
   };
 }

@@ -1,13 +1,67 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch, inject } from "vue";
 import { useAuth } from "../composables/useAuth.js";
+import api from "../services/api.js";
 
+const showAlert = inject('showAlert');
+const resetMode = inject('resetMode');
+const isDaily = computed(() => resetMode.value === 'daily');
 const { userProfile } = useAuth();
 
-// MOCK DATA
-const fluidConsumed = ref(45); // Current consumed 
-const fluidLimit = ref(32); // Doctor's limit
-const symptoms = ref(["Shortness of breath", "Swelling in ankles"]);
+
+
+// DATA
+const fluidConsumed = ref(0); 
+const fluidLimit = inject('fluidLimit');
+const symptoms = ref([]);
+
+const fetchTodayIntake = async () => {
+  const uid = userProfile.value?.uid || "default_user";
+  try {
+    const res = await api.intake.get(`/intake/${uid}/today`);
+    fluidConsumed.value = Math.round(res.data.total_fluid_ml / 29.5735);
+    
+    // Extract symptoms from today's events
+    const todaysSymptoms = res.data.events
+      .filter(e => e.event_type === "symptom_log")
+      .map(e => e.payload.symptom);
+    symptoms.value = todaysSymptoms;
+  } catch (err) {
+    console.error("Failed to fetch today's intake:", err);
+  }
+};
+
+onMounted(() => {
+  fetchTodayIntake();
+});
+
+watch(userProfile, (newProfile) => {
+  if (newProfile) {
+    fetchTodayIntake();
+  }
+});
+
+const refreshDashboardTrigger = inject('refreshDashboardTrigger');
+if (refreshDashboardTrigger) {
+  watch(refreshDashboardTrigger, () => {
+    fetchTodayIntake();
+  });
+}
+
+const handleReset = async () => {
+  showAlert("Are you sure you want to reset today's data?", "confirm", async () => {
+    const uid = userProfile.value?.uid || "default_user";
+    try {
+      await api.intake.delete(`/intake/${uid}/today`);
+      fluidConsumed.value = 0;
+      symptoms.value = [];
+      showAlert("Today's data has been reset!", "success");
+    } catch (err) {
+      console.error("Failed to reset today's intake:", err);
+      showAlert("Failed to reset data.", "error");
+    }
+  });
+};
 
 // Calculate risk percentage
 const riskPercentage = computed(() => {
@@ -26,30 +80,54 @@ const riskLabel = computed(() => {
   if (fluidConsumed.value < fluidLimit.value) return "Warning";
   return "High Risk (Critical)";
 });
+
+const dashboardTitle = computed(() => {
+  return resetMode.value === 'daily' ? "Fluid Intake for Today" : "Fluid Intake for the Period";
+});
+
+const measurementSystem = inject('measurementSystem');
+
+const displayConsumed = computed(() => {
+  return measurementSystem.value === 'ml' ? Math.round(fluidConsumed.value * 29.5735) : fluidConsumed.value;
+});
+
+const displayLimit = computed(() => {
+  return measurementSystem.value === 'ml' ? Math.round(fluidLimit.value * 29.5735) : fluidLimit.value;
+});
+
+const displayUnit = computed(() => {
+  return measurementSystem.value === 'ml' ? 'mL' : 'oz';
+});
 </script>
 
 <template>
   <section class="dashboard-page">
-    <h1 class="page-title">Dashboard</h1>
+    <div class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <button class="reset-btn" @click="handleReset" title="Reset Today's Data">
+        <svg class="icon-small" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <span>Reset</span>
+      </button>
+    </div>
     
     <div class="dashboard-cards">
       <!-- FLUID INTAKE CARD -->
       <div class="card fluid-card">
         <div class="card-header">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-          <h2>Fluid Intake</h2>
+          <h2>{{ dashboardTitle }}</h2>
         </div>
         
         <div class="intake-numbers">
           <span class="consumed" :class="{ 'danger-text': fluidConsumed > fluidLimit }">
-            {{ fluidConsumed }}<span class="unit">oz</span>
+            {{ displayConsumed }}<span class="unit">{{ displayUnit }}</span>
           </span>
           <span class="divider">/</span>
-          <span class="limit">{{ fluidLimit }} oz limit</span>
+          <span class="limit">{{ displayLimit }} {{ displayUnit }} limit</span>
         </div>
         
         <p v-if="fluidConsumed > fluidLimit" class="over-limit-warning">
-          You are {{ fluidConsumed - fluidLimit }} oz over your daily restriction!
+          You are {{ displayConsumed - displayLimit }} {{ displayUnit }} over your daily restriction!
         </p>
       </div>
 
@@ -91,6 +169,8 @@ const riskLabel = computed(() => {
       </div>
 
     </div>
+
+
   </section>
 </template>
 
@@ -103,11 +183,41 @@ const riskLabel = computed(() => {
 }
 
 .page-title {
-  color: #0369a1;
+  color: #007BFF;
   font-size: 1.75rem;
   font-weight: 800;
-  margin-top: 0;
+  margin: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
+}
+
+.reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: #fef2f2;
+}
+
+.icon-small {
+  width: 16px;
+  height: 16px;
 }
 
 .dashboard-cards {
@@ -135,13 +245,13 @@ const riskLabel = computed(() => {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #141414;
 }
 
 .icon {
   width: 24px;
   height: 24px;
-  color: #0284c7;
+  color: #007BFF;
 }
 
 /* FLUID INTAKE STYLES */
@@ -154,7 +264,7 @@ const riskLabel = computed(() => {
 .consumed {
   font-size: 3.5rem;
   font-weight: 900;
-  color: #0284c7;
+  color: #007BFF;
   line-height: 1;
 }
 
@@ -170,13 +280,13 @@ const riskLabel = computed(() => {
 
 .divider {
   font-size: 2rem;
-  color: #94a3b8;
+  color: #C0C0C0;
   font-weight: 300;
 }
 
 .limit {
   font-size: 1.25rem;
-  color: #64748b;
+  color: #666666;
   font-weight: 600;
 }
 
@@ -220,7 +330,7 @@ const riskLabel = computed(() => {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #1e293b;
+  background: #141414;
   border-radius: 2px;
   transform: translateX(-50%);
   z-index: 10;
@@ -233,7 +343,7 @@ const riskLabel = computed(() => {
   margin-top: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748b;
+  color: #666666;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -255,7 +365,7 @@ const riskLabel = computed(() => {
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #334155;
+  color: #333333;
   display: flex;
   align-items: center;
 }
@@ -269,8 +379,9 @@ const riskLabel = computed(() => {
 }
 
 .empty-text {
-  color: #94a3b8;
+  color: #C0C0C0;
   font-style: italic;
   margin: 0;
 }
+
 </style>

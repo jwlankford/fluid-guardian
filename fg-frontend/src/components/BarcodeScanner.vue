@@ -101,13 +101,13 @@ const closeScanner = () => {
 .scanner-header h3 {
   margin: 0;
   font-size: 1.125rem;
-  color: #0f172a;
+  color: #0A0A0A;
 }
 
 .close-btn {
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #666666;
   cursor: pointer;
   padding: 4px;
   border-radius: 8px;
@@ -115,7 +115,7 @@ const closeScanner = () => {
 
 .close-btn:hover {
   background: #f1f5f9;
-  color: #0f172a;
+  color: #0A0A0A;
 }
 
 .scanner-body {
@@ -141,7 +141,7 @@ const closeScanner = () => {
 }
 
 .instruction-text {
-  color: #64748b;
+  color: #666666;
   font-size: 0.875rem;
   text-align: center;
   margin: 0;
