@@ -75,3 +75,29 @@ services:
     envVars:
       - key: FG_DATABASE_URL
         sync: false
+
+  - type: web
+    name: fluid-guardian-frontend
+    runtime: static
+    rootDir: fg-frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_INTAKE_API_URL
+        value: https://fluid-guardian-intake.onrender.com
+      - key: VITE_PREDICTION_API_URL
+        value: https://fluid-guardian-prediction.onrender.com
+      - key: VITE_SAFETY_API_URL
+        value: https://fluid-guardian-safety.onrender.com
+      - key: VITE_REPORTING_API_URL
+        value: https://fluid-guardian-reporting.onrender.com
+      - key: VITE_LEARNING_API_URL
+        value: https://fluid-guardian-learning.onrender.com
+      - key: VITE_NUTRITION_API_URL
+        value: https://fluid-guardian-nutrition.onrender.com
+      - key: VITE_INTERVENTION_API_URL
+        value: https://fluid-guardian-intervention.onrender.com

@@ -26,7 +26,7 @@ SQLite database named `fg_core.db` in the server's working directory.
 
 ## Deploy APIs with Neon and Render
 
-The Render Blueprint in `render.yaml` defines all seven FastAPI services.
+The Render Blueprint in `render.yaml` defines all seven FastAPI services and\nthe Vue frontend as a static site (`fluid-guardian-frontend`), which is built\nwith the services' public URLs. The APIs allow browser requests from the origins\nin `FG_CORS_ORIGINS` (defaults to the local Vite server and the Render\nfrontend URL).
 They share a Neon PostgreSQL database through the `FG_DATABASE_URL` environment
 variable. The value is intentionally not stored in this repository.
 
