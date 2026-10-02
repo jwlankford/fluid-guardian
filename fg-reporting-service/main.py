@@ -1,27 +1,23 @@
-Scaffold a FastAPI microservice called “Reporting Service”.
+from contextlib import asynccontextmanager
 
-Structure:
-- main.py
-- routers/
-    - daily.py (GET /report/daily/{user_id})
-    - weekly.py (GET /report/weekly/{user_id})
-    - clinician.py (GET /report/clinician/{user_id})
-- models/
-    - report.py
-- db/
-    - base.py
-    - session.py
-- utils/
-    - aggregators.py
-    - summarizers.py
-    - clinician_formatter.py
+from fastapi import FastAPI
 
-Implement placeholder aggregation logic for:
-- daily intake
-- weekly summaries
-- clinician reports
+from fg_core.db.session import create_all
+from routers import clinician, daily, weekly
 
-Use SQLAlchemy + Pydantic.  
-Import shared models from fg-core.
 
-# generate the scaffold
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_all()
+    yield
+
+
+app = FastAPI(title="Reporting Service", lifespan=lifespan)
+app.include_router(daily.router)
+app.include_router(weekly.router)
+app.include_router(clinician.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "service": "reporting"}
