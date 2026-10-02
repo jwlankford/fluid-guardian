@@ -8,3 +8,9 @@ import DailyReport from "../components/DailyReport.vue";
     <DailyReport />
   </section>
 </template>
+
+<style scoped>
+h1 {
+  color: #0369a1;
+}
+</style>

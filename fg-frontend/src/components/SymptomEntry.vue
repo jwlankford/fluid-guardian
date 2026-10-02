@@ -37,10 +37,28 @@ function submitSymptom() {
 input {
   min-width: 0;
   flex: 1;
-  padding: 8px;
+  padding: 8px 12px;
+  border: 1px solid #7dd3fc;
+  border-radius: 6px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
 }
 
 button {
-  padding: 8px 12px;
+  padding: 8px 16px;
+  background-color: #0284c7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #0369a1;
 }
 </style>

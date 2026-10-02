@@ -37,10 +37,16 @@ const symptoms = ref([]);
   gap: 16px;
 }
 
+h1, h2 {
+  color: #0369a1;
+}
+
 .symptoms {
   margin-top: 24px;
   padding: 20px;
   border-radius: 10px;
   background: white;
+  box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.1), 0 2px 4px -1px rgba(2, 132, 199, 0.06);
+  border-top: 4px solid #7dd3fc;
 }
 </style>
