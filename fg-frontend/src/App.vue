@@ -2,9 +2,10 @@
 import { ref, onBeforeUnmount } from "vue";
 import Dashboard from "./pages/Dashboard.vue";
 import Reports from "./pages/Reports.vue";
+import EnterFluid from "./pages/EnterFluid.vue";
 import api from "./services/api.js";
 
-const currentPage = ref("dashboard");
+const currentPage = ref("enter");
 const isNavMenuOpen = ref(false);
 const isAddMenuOpen = ref(false);
 
@@ -115,7 +116,7 @@ onBeforeUnmount(() => {
 <template>
   <main class="app-shell">
     <header class="app-header">
-      <a class="brand" href="#" @click.prevent="navigateTo('dashboard')">
+      <a class="brand" href="#" @click.prevent="navigateTo('enter')">
         Fluid Guardian
       </a>
       
@@ -151,6 +152,12 @@ onBeforeUnmount(() => {
               Dashboard
             </button>
             <button
+              :aria-current="currentPage === 'enter' ? 'page' : undefined"
+              @click="navigateTo('enter')"
+            >
+              Enter Fluid
+            </button>
+            <button
               :aria-current="currentPage === 'reports' ? 'page' : undefined"
               @click="navigateTo('reports')"
             >
@@ -162,6 +169,7 @@ onBeforeUnmount(() => {
     </header>
 
     <Dashboard v-if="currentPage === 'dashboard'" />
+    <EnterFluid v-else-if="currentPage === 'enter'" />
     <Reports v-else />
 
     <!-- Camera Modal Overlay -->
