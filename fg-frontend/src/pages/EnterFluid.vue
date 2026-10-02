@@ -1,9 +1,57 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../services/api.js';
+import { useAuth } from '../composables/useAuth.js';
+import BarcodeScanner from '../components/BarcodeScanner.vue';
 
+const { isLoggedIn, userProfile } = useAuth();
 const currentOz = ref(0);
 const isSubmitting = ref(false);
+const isScannerOpen = ref(false);
+const isLookingUp = ref(false);
+
+const handleBarcodeScan = async (barcode) => {
+  isScannerOpen.value = false;
+  isLookingUp.value = true;
+  
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await res.json();
+    
+    if (data.status === 1 && data.product) {
+      let ml = parseFloat(data.product.product_quantity);
+      
+      if (!ml && data.product.quantity) {
+        const qtyStr = data.product.quantity.toLowerCase();
+        const match = qtyStr.match(/([\d.]+)\s*(ml|l|fl oz|oz)/);
+        if (match) {
+          const val = parseFloat(match[1]);
+          const unit = match[2];
+          if (unit === 'l') ml = val * 1000;
+          else if (unit === 'fl oz' || unit === 'oz') ml = val * 29.5735;
+          else ml = val;
+        }
+      }
+      
+      if (ml) {
+        const oz = Math.round(ml / 29.5735);
+        currentOz.value = oz;
+        const ozMod = currentOz.value % 64;
+        lastAngle = ozMod * (360 / 64);
+        alert(`Found ${data.product.product_name || 'Product'}!\nLoaded ${oz} oz.`);
+      } else {
+        alert(`Found ${data.product.product_name || 'Product'}, but couldn't determine its volume!`);
+      }
+    } else {
+      alert("Product not found in Open Food Facts database.");
+    }
+  } catch (e) {
+    console.error("Barcode lookup failed:", e);
+    alert("Error looking up product.");
+  } finally {
+    isLookingUp.value = false;
+  }
+};
 
 const setCupLevel = (i) => {
   currentOz.value = i * 8;
@@ -30,8 +78,8 @@ const handlePointerDown = (e) => {
   if (!sliderRef.value) return;
   isDragging.value = true;
   const rect = sliderRef.value.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = ((e.clientX - rect.left) / rect.width) * 300;
+  const y = ((e.clientY - rect.top) / rect.height) * 300;
   lastAngle = getAngle(x, y);
   
   // Also add global event listeners for drag and up
@@ -42,8 +90,8 @@ const handlePointerDown = (e) => {
 const handlePointerMove = (e) => {
   if (!isDragging.value || !sliderRef.value) return;
   const rect = sliderRef.value.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = ((e.clientX - rect.left) / rect.width) * 300;
+  const y = ((e.clientY - rect.top) / rect.height) * 300;
   
   const currentAngle = getAngle(x, y);
   let diff = currentAngle - lastAngle;
@@ -90,8 +138,8 @@ onUnmounted(() => {
 const handleAngleFromClick = (e) => {
   if (isDragging.value) return; // handled by pointerdown
   const rect = sliderRef.value.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = ((e.clientX - rect.left) / rect.width) * 300;
+  const y = ((e.clientY - rect.top) / rect.height) * 300;
   lastAngle = getAngle(x, y);
   // Just set the angle as the starting point for dragging
 };
@@ -132,6 +180,7 @@ const handlePos = computed(() => {
 
 <template>
   <section class="enter-page">
+    <h2 v-if="isLoggedIn && userProfile" class="user-greeting">Hi, {{ userProfile.firstName }}</h2>
     <h1>Log Fluid Intake</h1>
     
     <div class="cup-section">
@@ -155,7 +204,7 @@ const handlePos = computed(() => {
       <div class="slider-container" ref="sliderRef" 
            @pointerdown="handlePointerDown"
            style="touch-action: none;">
-        <svg width="300" height="300" viewBox="0 0 300 300">
+        <svg width="240" height="240" viewBox="0 0 300 300">
           <defs>
             <clipPath id="cup-clip">
               <rect x="90" :y="200 - (currentOz / 64) * 100" width="120" :height="(currentOz / 64) * 100" />
@@ -193,6 +242,27 @@ const handlePos = computed(() => {
           </text>
         </svg>
       </div>
+      
+      <div class="slider-actions">
+        <!-- AI Scan Button (Future) -->
+        <button class="scan-btn" @click="() => alert('AI Scan functionality coming soon!')" title="Scan with AI">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          <span>AI Scan</span>
+        </button>
+
+        <!-- Barcode Scan Button -->
+        <button class="scan-btn barcode-btn" @click="isScannerOpen = true" title="Scan Barcode">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm0 16a1 1 0 001 1h4a1 1 0 000-2H5v-3a1 1 0 00-2 0v4zm17-16a1 1 0 00-1-1h-4a1 1 0 000 2h3v3a1 1 0 002 0V4zm0 16a1 1 0 01-1 1h-4a1 1 0 010-2h3v-3a1 1 0 012 0v4z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 8v8M10 8v8M14 8v8M17 8v8" />
+          </svg>
+          <span>{{ isLookingUp ? 'Searching...' : 'Barcode' }}</span>
+        </button>
+      </div>
+
       <p class="instruction">Slide around the circle to add/remove by 1 oz</p>
     </div>
 
@@ -201,6 +271,9 @@ const handlePos = computed(() => {
         {{ isSubmitting ? 'Logging...' : 'Log for the Day' }}
       </button>
     </div>
+
+    <!-- Scanner Modal -->
+    <BarcodeScanner v-if="isScannerOpen" @close="isScannerOpen = false" @scan="handleBarcodeScan" />
   </section>
 </template>
 
@@ -217,20 +290,31 @@ const handlePos = computed(() => {
   margin: 0 auto;
 }
 
+.user-greeting {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin: 0;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  font-style: italic;
+}
+
 h1 {
   color: #0369a1;
+  margin-top: 0;
   margin-bottom: 24px;
 }
 
 .cup-section {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .cup-grid {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 12px 16px;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
 .small-cup-btn {
@@ -249,7 +333,7 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .slider-container {
@@ -266,20 +350,58 @@ h1 {
 }
 
 .oz-display {
-  font-size: 36px;
+  font-size: 23.41px;
   font-weight: bold;
   fill: #0369a1;
   text-shadow: 0 0 4px white, 0 0 8px white;
 }
 
+.slider-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  padding-left: 12px;
+}
+
+.scan-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.scan-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
 .instruction {
   color: #64748b;
   font-size: 0.9rem;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .submit-section {
   width: 100%;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 0;
+  z-index: 10;
+  margin-top: auto;
 }
 
 .submit-btn {

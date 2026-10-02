@@ -4,4 +4,9 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? '/',
   plugins: [vue()],
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    }
+  }
 })

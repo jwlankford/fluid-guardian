@@ -25,8 +25,8 @@ def intake_barcode(request: BarcodeIntakeRequest, db: Session = Depends(get_sess
     db.add(event)
     db.commit()
     db.refresh(event)
-    return IntakeResponse(
-        event=event,
-        recognized_volume_ml=volume_ml,
-        source="barcode",
-    )
+    return {
+        "event": event,
+        "recognized_volume_ml": volume_ml,
+        "source": "barcode",
+    }

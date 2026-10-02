@@ -25,8 +25,8 @@ def intake_manual(request: ManualIntakeRequest, db: Session = Depends(get_sessio
     db.add(event)
     db.commit()
     db.refresh(event)
-    return IntakeResponse(
-        event=event,
-        recognized_volume_ml=request.volume_ml,
-        source="manual",
-    )
+    return {
+        "event": event,
+        "recognized_volume_ml": request.volume_ml,
+        "source": "manual",
+    }

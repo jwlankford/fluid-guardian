@@ -23,8 +23,8 @@ def intake_text(request: TextIntakeRequest, db: Session = Depends(get_session)):
     db.add(event)
     db.commit()
     db.refresh(event)
-    return IntakeResponse(
-        event=event,
-        recognized_volume_ml=volume_ml,
-        source="text",
-    )
+    return {
+        "event": event,
+        "recognized_volume_ml": volume_ml,
+        "source": "text",
+    }

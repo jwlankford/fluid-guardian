@@ -21,4 +21,4 @@ def intake_image(request: ImageIntakeRequest, db: Session = Depends(get_session)
     db.add(event)
     db.commit()
     db.refresh(event)
-    return IntakeResponse(event=event, source="image")
+    return {"event": event, "source": "image"}
