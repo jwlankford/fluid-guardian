@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fg-core"
+version = "0.1.0"
+description = "Shared models and utilities for Fluid Guardian microservices"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.6",
+    "SQLAlchemy>=2.0",
+]
+
+[tool.setuptools]
+packages = [
+    "fg_core",
+    "fg_core.models",
+    "fg_core.db",
+    "fg_core.utils",
+]
+
+[tool.setuptools.package-dir]
+fg_core = "fg_core"
+"fg_core.models" = "fg_core/models"
+"fg_core.db" = "fg_core/db"
+"fg_core.utils" = "fg_core/utils"
