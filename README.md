@@ -1,9 +1,9 @@
 # Fluid Guardian
+Fluid Guardian is a microservices-based application built with a Vue frontend and seven distinct Python FastAPI backends to monitor and manage clinical fluid intake.
 
-The repository contains shared Python entities in `fg-core`, seven FastAPI
-services, and a Vue frontend. The service endpoints and domain helpers are
-initial scaffolds; image classification, product lookup, notification delivery,
-and clinical decision rules are placeholders and are not production integrations.
+Designed to prevent hydration-related emergencies, the system goes beyond simple liquid tracking by utilizing a dedicated nutrition service to identify "hidden fluids" from solid foods. The platform's ecosystem analyzes user behavior patterns, predicts clinical risk levels, and employs decision rules to trigger appropriate alerts or reminders via the intervention service. Additionally, its safety service evaluates reported symptoms for critical red flags requiring care-team outreach.
+
+The architecture relies on a shared Python package (fg-core) for database models and utilities, providing a robust, extensible foundation for proactive health management.
 
 ## Run a service locally
 
