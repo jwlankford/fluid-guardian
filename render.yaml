@@ -1,0 +1,103 @@
+services:
+  - type: web
+    name: fluid-guardian-intake
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-intake-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-intake-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-intervention
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-intervention-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-intervention-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-learning
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-learning-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-learning-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-nutrition
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-nutrition-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-nutrition-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-prediction
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-prediction-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-prediction-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-reporting
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-reporting-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-reporting-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-safety
+    runtime: python
+    plan: free
+    buildCommand: pip install -e ./fg-core -r ./fg-safety-service/requirements.txt
+    startCommand: uvicorn main:app --app-dir ./fg-safety-service --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FG_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: fluid-guardian-frontend
+    runtime: static
+    rootDir: fg-frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_INTAKE_API_URL
+        value: https://fluid-guardian-intake.onrender.com
+      - key: VITE_PREDICTION_API_URL
+        value: https://fluid-guardian-prediction.onrender.com
+      - key: VITE_SAFETY_API_URL
+        value: https://fluid-guardian-safety.onrender.com
+      - key: VITE_REPORTING_API_URL
+        value: https://fluid-guardian-reporting.onrender.com
+      - key: VITE_LEARNING_API_URL
+        value: https://fluid-guardian-learning.onrender.com
+      - key: VITE_NUTRITION_API_URL
+        value: https://fluid-guardian-nutrition.onrender.com
+      - key: VITE_INTERVENTION_API_URL
+        value: https://fluid-guardian-intervention.onrender.com
