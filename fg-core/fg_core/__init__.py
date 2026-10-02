@@ -1,7 +1,7 @@
 """Shared models and utilities for Fluid Guardian services."""
 
-from fg_core.db import SessionLocal, configure_database, create_all, get_session, session_scope
-from fg_core.models import (
+from .db import SessionLocal, configure_database, create_all, get_session, session_scope
+from .models import (
     Action,
     ActionSchema,
     BehaviorProfile,
@@ -15,7 +15,7 @@ from fg_core.models import (
     Prediction,
     PredictionSchema,
 )
-from fg_core.utils import generate_id, utc_now
+from .utils import generate_id, utc_now
 
 __all__ = [
     "Action",
