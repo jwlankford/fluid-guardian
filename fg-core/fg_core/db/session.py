@@ -16,6 +16,10 @@ from fg_core.db.base import Base
 def _create_engine(database_url: str, **engine_options: Any) -> Engine:
     if database_url.startswith("sqlite:"):
         engine_options.setdefault("connect_args", {"check_same_thread": False})
+    elif database_url.startswith("postgres://"):
+        database_url = "postgresql+psycopg://" + database_url.removeprefix("postgres://")
+    elif database_url.startswith("postgresql://"):
+        database_url = "postgresql+psycopg://" + database_url.removeprefix("postgresql://")
     return create_engine(database_url, **engine_options)
 
 
