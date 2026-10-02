@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: fg-core
+Version: 0.1.0
+Summary: Shared models and utilities for Fluid Guardian microservices
+Requires-Python: >=3.10
+Requires-Dist: pydantic>=2.6
+Requires-Dist: SQLAlchemy>=2.0
