@@ -5,7 +5,11 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-DEFAULT_ORIGINS = "http://localhost:5173,https://fluid-guardian-frontend.onrender.com"
+DEFAULT_ORIGINS = (
+    "http://localhost:5173,"
+    "https://fluid-guardian-frontend.onrender.com,"
+    "https://jwlankford.github.io"
+)
 
 
 def add_cors(app: FastAPI) -> None:
