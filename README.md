@@ -11,7 +11,7 @@ Use Python 3.10 or newer. From the repository root, install the shared package
 and the requirements for the service you want to run:
 
 ```powershell
-python -m pip install -e .\fg-core
+python -m pip install -e .\fg_core
 python -m pip install -r .\fg-intake-service\requirements.txt
 python -m uvicorn main:app --app-dir .\fg-intake-service --reload
 ```
