@@ -1,0 +1,56 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - fg-frontend/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fg-frontend
+    env:
+      VITE_BASE_PATH: /${{ github.event.repository.name }}/
+      VITE_INTAKE_API_URL: https://fluid-guardian-intake.onrender.com
+      VITE_PREDICTION_API_URL: https://fluid-guardian-prediction.onrender.com
+      VITE_SAFETY_API_URL: https://fluid-guardian-safety.onrender.com
+      VITE_REPORTING_API_URL: https://fluid-guardian-reporting.onrender.com
+      VITE_LEARNING_API_URL: https://fluid-guardian-learning.onrender.com
+      VITE_NUTRITION_API_URL: https://fluid-guardian-nutrition.onrender.com
+      VITE_INTERVENTION_API_URL: https://fluid-guardian-intervention.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: fg-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: fg-frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

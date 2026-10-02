@@ -46,3 +46,12 @@ variable. The value is intentionally not stored in this repository.
 The Blueprint uses Render's free instance plan to avoid provisioning paid
 resources automatically. Free web services can spin down when idle, so expect
 cold starts; select a paid plan in Render if the APIs need to stay warm.
+
+## Frontend on GitHub Pages
+
+`.github/workflows/pages.yml` builds `fg-frontend` and publishes it to
+GitHub Pages whenever frontend changes land on `main`. The site is served at
+`https://<owner>.github.io/fluid-guardian/` and calls the Render APIs. In the
+repository, open **Settings > Pages** and set **Source** to **GitHub Actions**
+once. The APIs allow the `https://jwlankford.github.io` origin by default; set
+`FG_CORS_ORIGINS` on the Render services if the site is hosted elsewhere.
