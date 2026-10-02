@@ -137,10 +137,16 @@ onBeforeUnmount(() => {
   padding: 20px;
   border-radius: 10px;
   background: white;
-  box-shadow: 0 1px 4px #1f29371a;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.1);
+  border-top: 4px solid #7dd3fc;
 }
 
-h2, p {
+h2 {
+  color: #0369a1;
+  margin: 0 0 8px;
+}
+
+p {
   margin: 0 0 8px;
 }
 
@@ -167,33 +173,34 @@ h2, p {
   max-width: 400px;
   border-radius: 8px;
   background: #000;
+  border: 2px solid #0284c7;
 }
 
 .action-btn {
   display: inline-block;
   padding: 8px 16px;
-  background: #14566b;
+  background: #0284c7;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
   text-align: center;
   transition: background 0.2s;
 }
 
 .action-btn:hover {
-  background: #0f4354;
+  background: #0369a1;
 }
 
 .action-btn.secondary {
-  background: #e2e8f0;
-  color: #1f2937;
+  background: #e0f2fe;
+  color: #0284c7;
 }
 
 .action-btn.secondary:hover {
-  background: #cbd5e1;
+  background: #bae6fd;
 }
 
 .hidden-input {
@@ -206,7 +213,7 @@ h2, p {
 }
 
 .status {
-  color: #14566b;
+  color: #0369a1;
   font-weight: 500;
   margin-top: 12px;
 }
@@ -214,13 +221,15 @@ h2, p {
 .result {
   margin-top: 16px;
   padding: 12px;
-  background: #f3f6f8;
+  background: #e0f2fe;
   border-radius: 6px;
   overflow-x: auto;
+  border: 1px solid #bae6fd;
 }
 
 pre {
   margin: 0;
   font-size: 0.85rem;
+  color: #0c4a6e;
 }
 </style>
