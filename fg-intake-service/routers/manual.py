@@ -30,3 +30,23 @@ def intake_manual(request: ManualIntakeRequest, db: Session = Depends(get_sessio
         "recognized_volume_ml": request.volume_ml,
         "source": "manual",
     }
+
+
+class SymptomLogRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=200)
+    symptom: str = Field(min_length=1, max_length=500)
+
+@router.post("/symptom")
+def log_symptom(request: SymptomLogRequest, db: Session = Depends(get_session)):
+    event = FluidEvent(
+        event_type="symptom_log",
+        occurred_at=utc_now(),
+        payload=event_payload(
+            request.user_id, {"symptom": request.symptom}
+        ),
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return {"status": "success", "event_id": event.id}
+

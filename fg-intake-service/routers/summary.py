@@ -39,3 +39,22 @@ def get_today_summary(user_id: str, db: Session = Depends(get_session)):
         event_count=len(user_events),
         events=[FluidEventSchema.model_validate(event) for event in user_events],
     )
+
+@router.delete("/{user_id}/today")
+def reset_today(user_id: str, db: Session = Depends(get_session)):
+    now = datetime.now(timezone.utc)
+    start = datetime.combine(now.date(), time.min, tzinfo=timezone.utc)
+    end = start + timedelta(days=1)
+    events = db.scalars(
+        select(FluidEvent)
+        .where(FluidEvent.occurred_at >= start, FluidEvent.occurred_at < end)
+    ).all()
+    user_events = [
+        event
+        for event in events
+        if event.payload.get("user_id") == user_id
+    ]
+    for event in user_events:
+        db.delete(event)
+    db.commit()
+    return {"status": "success", "deleted": len(user_events)}
