@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import DailyReport from "../components/DailyReport.vue";
 import FluidEntryCard from "../components/FluidEntryCard.vue";
+import ItemUpload from "../components/ItemUpload.vue";
 import RiskIndicator from "../components/RiskIndicator.vue";
 import SymptomEntry from "../components/SymptomEntry.vue";
 
@@ -15,6 +16,7 @@ const symptoms = ref([]);
       <FluidEntryCard />
       <RiskIndicator />
       <DailyReport />
+      <ItemUpload />
     </div>
     <section class="symptoms">
       <h2>Symptoms</h2>
