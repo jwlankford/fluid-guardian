@@ -1,5 +1,7 @@
 <script setup>
 import { inject, ref, watch, computed } from 'vue';
+import { api } from '../services/api';
+import { authService } from '../services/firebase';
 
 const isDarkMode = inject('isDarkMode');
 const toggleTheme = inject('toggleTheme');
@@ -45,6 +47,27 @@ const displayLimit = computed(() => {
 const displayUnit = computed(() => {
   return measurementSystem.value === 'ml' ? 'mL' : 'oz';
 });
+
+const isCheckingOut = ref(false);
+const handleBuyCredits = async () => {
+  try {
+    const uid = authService.currentUser?.uid;
+    if (!uid) {
+      alert("Please sign in to buy scans.");
+      return;
+    }
+    isCheckingOut.value = true;
+    const res = await api.intake.post(`/payment/create-checkout-session?user_id=${uid}`);
+    if (res.data.url) {
+      window.location.href = res.data.url;
+    }
+  } catch (err) {
+    console.error("Failed to initiate checkout:", err);
+    alert("Failed to connect to checkout server.");
+  } finally {
+    isCheckingOut.value = false;
+  }
+};
 </script>
 
 <template>
@@ -109,6 +132,17 @@ const displayUnit = computed(() => {
         </div>
         <button class="toggle-btn" :class="{ active: measurementSystem === 'ml' }" @click="handleMeasurementToggle">
           <div class="toggle-knob"></div>
+        </button>
+      </div>
+
+      <div class="pref-item buy-scans-item" style="border-top: 1px solid #e2e8f0; margin-top: 12px; padding-top: 24px;">
+        <div class="pref-info">
+          <h3>AI Scan Credits</h3>
+          <p>Instantly estimate fluid using your camera</p>
+          <span class="status-badge" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">50 Scans for $7.99</span>
+        </div>
+        <button class="buy-btn" @click="handleBuyCredits" :disabled="isCheckingOut">
+          {{ isCheckingOut ? 'Loading...' : 'Buy Now' }}
         </button>
       </div>
     </div>
@@ -226,5 +260,37 @@ html.dark .toggle-btn {
 
 html.dark .toggle-btn.active {
   background: #007BFF;
+}
+
+.buy-btn {
+  background: linear-gradient(135deg, #007BFF, #00CFFF);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+}
+
+.buy-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px rgba(0, 123, 255, 0.3);
+}
+
+.buy-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.buy-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+html.dark .buy-scans-item {
+  border-top-color: #333333 !important;
 }
 </style>
