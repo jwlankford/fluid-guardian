@@ -14,6 +14,8 @@ from .models import (
     FluidEventSchema,
     Prediction,
     PredictionSchema,
+    UserAccount,
+    UserAccountSchema,
 )
 from .utils import generate_id, utc_now
 
@@ -30,6 +32,8 @@ __all__ = [
     "FluidEventSchema",
     "Prediction",
     "PredictionSchema",
+    "UserAccount",
+    "UserAccountSchema",
     "SessionLocal",
     "configure_database",
     "create_all",
