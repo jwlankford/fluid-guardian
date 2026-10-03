@@ -98,6 +98,16 @@ const displayLimit = computed(() => {
 const displayUnit = computed(() => {
   return measurementSystem.value === 'ml' ? 'mL' : 'oz';
 });
+
+const estimatedWeightGain = computed(() => {
+  const ml = fluidConsumed.value * 29.5735;
+  const kg = ml / 1000;
+  return measurementSystem.value === 'ml' ? kg.toFixed(2) : (kg * 2.20462).toFixed(2);
+});
+
+const weightUnit = computed(() => {
+  return measurementSystem.value === 'ml' ? 'kg' : 'lb';
+});
 </script>
 
 <template>
