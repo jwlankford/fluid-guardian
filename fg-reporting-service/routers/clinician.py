@@ -15,6 +15,8 @@ def get_clinician_report(
     period_days: int = Query(default=30, ge=1, le=365),
     db: Session = Depends(get_session),
 ):
+    if not isinstance(period_days, int):
+        period_days = 30
     start, end = utc_day_range(period_days)
     events = get_user_events(db, user_id, start, end)
     return format_clinician_report(user_id, events, period_days)

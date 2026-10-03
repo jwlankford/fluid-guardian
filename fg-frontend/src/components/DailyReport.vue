@@ -26,13 +26,13 @@ const props = defineProps({
 
 const displayConsumed = computed(() => {
   if (!props.report) return 0;
-  return props.unit === "ml"
+  return (props.unit || "").toLowerCase() === "ml"
     ? Math.round(props.report.total_intake_ml || 0)
     : Math.round((props.report.total_intake_ml || 0) / 29.5735);
 });
 
 const displayLimit = computed(() => {
-  return props.unit === "ml"
+  return (props.unit || "").toLowerCase() === "ml"
     ? Math.round(props.fluidLimit * 29.5735)
     : props.fluidLimit;
 });
@@ -63,7 +63,9 @@ const formatEventTime = (isoString) => {
 const getEventVolume = (event) => {
   const ml = event.payload?.volume_ml;
   if (ml === undefined || ml === null) return null;
-  return props.unit === "ml" ? `${ml} mL` : `${Math.round(ml / 29.5735)} oz`;
+  return (props.unit || "").toLowerCase() === "ml"
+    ? `${Math.round(ml)} mL`
+    : `${Math.round(ml / 29.5735)} oz`;
 };
 </script>
 

@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, watch, onMounted, inject } from "vue";
-import DailyReport from "../components/DailyReport.vue";
 import PeriodIntakeChart from "../components/PeriodIntakeChart.vue";
 import { useAuth } from "../composables/useAuth.js";
 import api from "../services/api.js";
@@ -10,8 +9,6 @@ const measurementSystem = inject("measurementSystem", ref("oz"));
 const fluidLimit = inject("fluidLimit", ref(64));
 const { userProfile } = useAuth();
 
-const reportType = ref("period");
-
 // Helper to format Date to YYYY-MM-DD
 const toISODate = (d) => {
   const year = d.getFullYear();
@@ -20,49 +17,51 @@ const toISODate = (d) => {
   return `${year}-${month}-${day}`;
 };
 
-// Initial default dates (Last 7 days for period, Today for single day)
-const now = new Date();
-const past7Days = new Date();
-past7Days.setDate(now.getDate() - 6);
+// Date range filters
+const fromDate = ref("");
+const toDate = ref("");
+const activePreset = ref("all");
 
-const singleDate = ref(toISODate(now));
-const fromDate = ref(toISODate(past7Days));
-const toDate = ref(toISODate(now));
-
-// Period report state
-const periodData = ref(null);
-const isPeriodLoading = ref(false);
-
-// Daily report state
-const dailyData = ref(null);
-const isDailyLoading = ref(false);
+// Report state
+const reportData = ref(null);
+const isLoading = ref(false);
 
 const unit = computed(() => (measurementSystem.value === "ml" ? "mL" : "oz"));
 
 const getUserId = () => {
-  return userProfile.value?.uid || "doen1YU9BAPpTxLPG6MFHx9CFpf2";
+  return userProfile.value?.uid || "default_user";
 };
 
 // Quick date range presets
-const setPreset = (days) => {
+const setPreset = (preset) => {
+  activePreset.value = preset;
+  if (preset === "all") {
+    fromDate.value = "";
+    toDate.value = "";
+    fetchReport(true);
+    return;
+  }
+
   const end = new Date();
   toDate.value = toISODate(end);
 
-  if (days === "month") {
+  if (preset === "month") {
     const start = new Date(end.getFullYear(), end.getMonth(), 1);
     fromDate.value = toISODate(start);
   } else {
+    const days = Number(preset);
     const start = new Date();
     start.setDate(end.getDate() - (days - 1));
     fromDate.value = toISODate(start);
   }
+  fetchReport(false);
 };
 
 // Generate fallback days when offline / mock
 const generateFallbackDays = (startStr, endStr) => {
   const result = [];
-  const start = new Date(startStr);
-  const end = new Date(endStr);
+  const start = new Date(startStr || new Date());
+  const end = new Date(endStr || new Date());
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return result;
 
   const curr = new Date(start);
@@ -72,108 +71,94 @@ const generateFallbackDays = (startStr, endStr) => {
       intake_ml: 0,
       running_intake_ml: 0,
       event_count: 0,
+      events: [],
     });
     curr.setDate(curr.getDate() + 1);
   }
   return result;
 };
 
-// Fetch Period Report
-const fetchPeriodReport = async () => {
-  if (!fromDate.value || !toDate.value) return;
-  isPeriodLoading.value = true;
+// Fetch Report directly from database
+const fetchReport = async (isAll = false) => {
+  isLoading.value = true;
   const uid = getUserId();
 
-  try {
-    const res = await api.reporting.get(`/report/period/${uid}`, {
-      params: {
-        start_date: fromDate.value,
-        end_date: toDate.value,
-      },
-    });
-    periodData.value = res.data;
-  } catch (err) {
-    console.warn("Could not fetch period report from backend, using local fallback:", err);
-    // Provide empty fallback range so chart displays properly without crashing
-    periodData.value = {
-      user_id: uid,
-      start_date: fromDate.value,
-      end_date: toDate.value,
-      total_intake_ml: 0,
-      average_daily_ml: 0,
-      event_count: 0,
-      daily_totals_ml: {},
-      running_totals_ml: {},
-      days: generateFallbackDays(fromDate.value, toDate.value),
-    };
-  } finally {
-    isPeriodLoading.value = false;
+  const params = {};
+  if (!isAll && fromDate.value && toDate.value) {
+    params.start_date = fromDate.value;
+    params.end_date = toDate.value;
   }
-};
-
-// Fetch Daily Report
-const fetchDailyReport = async () => {
-  if (!singleDate.value) return;
-  isDailyLoading.value = true;
-  const uid = getUserId();
 
   try {
-    const res = await api.reporting.get(`/report/daily/${uid}`, {
-      params: {
-        report_date: singleDate.value,
-      },
-    });
-    dailyData.value = res.data;
-  } catch (err) {
-    console.warn("Could not fetch daily report from backend:", err);
-    dailyData.value = {
-      user_id: uid,
-      date: singleDate.value,
-      total_intake_ml: 0,
-      event_count: 0,
-      events: [],
-    };
-  } finally {
-    isDailyLoading.value = false;
-  }
-};
-
-// Watchers
-watch(
-  [fromDate, toDate],
-  () => {
-    if (reportType.value === "period") {
-      fetchPeriodReport();
+    const res = await api.reporting.get(`/report/period/${uid}`, { params });
+    reportData.value = res.data;
+    if (res.data.start_date) {
+      fromDate.value = res.data.start_date;
     }
-  },
-  { deep: true }
-);
-
-watch(singleDate, () => {
-  if (reportType.value === "day") {
-    fetchDailyReport();
+    if (res.data.end_date) {
+      toDate.value = res.data.end_date;
+    }
+  } catch (err) {
+    console.warn("Could not fetch report from reporting backend:", err);
+    // Attempt local fallback: fetch today's data from intake service or generate empty range
+    try {
+      const todayRes = await api.intake.get(`/intake/${uid}/today`);
+      const todayData = todayRes.data;
+      const todayStr = toISODate(new Date());
+      const totalMl = todayData.total_fluid_ml || 0;
+      reportData.value = {
+        user_id: uid,
+        start_date: todayStr,
+        end_date: todayStr,
+        total_intake_ml: totalMl,
+        average_daily_ml: totalMl,
+        event_count: todayData.event_count || 0,
+        daily_totals_ml: { [todayStr]: totalMl },
+        running_totals_ml: { [todayStr]: totalMl },
+        days: [
+          {
+            date: todayStr,
+            intake_ml: totalMl,
+            running_intake_ml: totalMl,
+            event_count: todayData.event_count || 0,
+            events: todayData.events || [],
+          },
+        ],
+      };
+      fromDate.value = todayStr;
+      toDate.value = todayStr;
+    } catch {
+      const todayStr = toISODate(new Date());
+      reportData.value = {
+        user_id: uid,
+        start_date: fromDate.value || todayStr,
+        end_date: toDate.value || todayStr,
+        total_intake_ml: 0,
+        average_daily_ml: 0,
+        event_count: 0,
+        daily_totals_ml: {},
+        running_totals_ml: {},
+        days: generateFallbackDays(fromDate.value || todayStr, toDate.value || todayStr),
+      };
+    }
+  } finally {
+    isLoading.value = false;
   }
-});
+};
 
-watch(reportType, (newType) => {
-  if (newType === "period") {
-    fetchPeriodReport();
-  } else {
-    fetchDailyReport();
+const onCustomDateChange = () => {
+  activePreset.value = "custom";
+  if (fromDate.value && toDate.value) {
+    fetchReport(false);
   }
-});
+};
 
 watch(userProfile, () => {
-  if (reportType.value === "period") {
-    fetchPeriodReport();
-  } else {
-    fetchDailyReport();
-  }
+  fetchReport(activePreset.value === "all");
 });
 
 onMounted(() => {
-  fetchPeriodReport();
-  fetchDailyReport();
+  fetchReport(true);
 });
 
 // CSV Export Handler
@@ -184,45 +169,24 @@ const exportCSV = () => {
       ? Math.round(fluidLimit.value * 29.5735)
       : fluidLimit.value;
 
-  let csvContent = "";
-  let filename = "";
+  const filename = `fluid_intake_report_${fromDate.value || "all"}_to_${toDate.value || "all"}.csv`;
+  let csvContent = `Date,Daily Intake (${currentUnit}),Running Total (${currentUnit}),Daily Limit (${currentUnit}),Limit Difference (${currentUnit}),Status,Events Count\n`;
 
-  if (reportType.value === "period") {
-    filename = `fluid_intake_report_${fromDate.value}_to_${toDate.value}.csv`;
-    csvContent = `Date,Daily Intake (${currentUnit}),Running Total (${currentUnit}),Daily Limit (${currentUnit}),Limit Difference (${currentUnit}),Status\n`;
+  const daysList = reportData.value?.days || [];
+  daysList.forEach((d) => {
+    const dailyVal =
+      measurementSystem.value === "ml"
+        ? Math.round(d.intake_ml)
+        : Math.round(d.intake_ml / 29.5735);
+    const runningVal =
+      measurementSystem.value === "ml"
+        ? Math.round(d.running_intake_ml)
+        : Math.round(d.running_intake_ml / 29.5735);
+    const diff = dailyVal - limitVal;
+    const status = diff > 0 ? "Over Limit" : "Within Limit";
 
-    const daysList = periodData.value?.days || [];
-    daysList.forEach((d) => {
-      const dailyVal =
-        measurementSystem.value === "ml"
-          ? Math.round(d.intake_ml)
-          : Math.round(d.intake_ml / 29.5735);
-      const runningVal =
-        measurementSystem.value === "ml"
-          ? Math.round(d.running_intake_ml)
-          : Math.round(d.running_intake_ml / 29.5735);
-      const diff = dailyVal - limitVal;
-      const status = diff > 0 ? "Over Limit" : "Within Limit";
-
-      csvContent += `${d.date},${dailyVal},${runningVal},${limitVal},${diff},${status}\n`;
-    });
-  } else {
-    filename = `fluid_intake_report_${singleDate.value}.csv`;
-    csvContent = `Date,Event Type,Volume (${currentUnit}),Time\n`;
-    const events = dailyData.value?.events || [];
-    if (events.length === 0) {
-      csvContent += `${singleDate.value},No Events,0,-\n`;
-    } else {
-      events.forEach((e) => {
-        const ml = e.payload?.volume_ml || 0;
-        const vol =
-          measurementSystem.value === "ml"
-            ? Math.round(ml)
-            : Math.round(ml / 29.5735);
-        csvContent += `${singleDate.value},${e.event_type},${vol},${e.occurred_at || ""}\n`;
-      });
-    }
-  }
+    csvContent += `${d.date},${dailyVal},${runningVal},${limitVal},${diff},${status},${d.event_count || 0}\n`;
+  });
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -244,11 +208,11 @@ const handleExport = (type) => {
     exportCSV();
   } else if (type === "Email") {
     if (showAlert) {
-      showAlert(`Emailing ${reportType.value === "period" ? "Period" : "Daily"} report to clinician...`, "success");
+      showAlert("Emailing intake report to clinician...", "success");
     }
   } else if (type === "PDF") {
     if (showAlert) {
-      showAlert(`Generating PDF report... Download will start shortly.`, "success");
+      showAlert("Generating PDF report... Download will start shortly.", "success");
     }
   }
 };
@@ -258,68 +222,79 @@ const handleExport = (type) => {
   <section class="reports-page">
     <h1 class="page-title">Reports</h1>
 
-    <!-- Report Controls (Toggle & Dates) -->
+    <!-- Report Controls (Date Range & Presets) -->
     <div class="report-controls card">
-      <div class="toggle-group">
-        <button 
-          :class="['toggle-btn', { active: reportType === 'period' }]" 
-          @click="reportType = 'period'"
-        >By Period</button>
-        <button 
-          :class="['toggle-btn', { active: reportType === 'day' }]" 
-          @click="reportType = 'day'"
-        >By Day</button>
-      </div>
-
-      <!-- Period Date Pickers -->
-      <div v-if="reportType === 'period'" class="period-controls-wrapper">
+      <div class="period-controls-wrapper">
         <div class="date-pickers period-pickers">
           <div class="custom-input-group">
             <label>From</label>
-            <input type="date" v-model="fromDate" :max="toDate" />
+            <input
+              type="date"
+              v-model="fromDate"
+              :max="toDate"
+              @change="onCustomDateChange"
+            />
           </div>
           <div class="custom-input-group">
             <label>To</label>
-            <input type="date" v-model="toDate" :min="fromDate" />
+            <input
+              type="date"
+              v-model="toDate"
+              :min="fromDate"
+              @change="onCustomDateChange"
+            />
           </div>
         </div>
 
         <!-- Quick Preset Pills -->
         <div class="preset-pills">
-          <button type="button" class="preset-pill" @click="setPreset(7)">7 Days</button>
-          <button type="button" class="preset-pill" @click="setPreset(14)">14 Days</button>
-          <button type="button" class="preset-pill" @click="setPreset(30)">30 Days</button>
-          <button type="button" class="preset-pill" @click="setPreset('month')">This Month</button>
-        </div>
-      </div>
-
-      <!-- Single Day Picker -->
-      <div v-else class="date-pickers">
-        <div class="custom-input-group">
-          <label>Select Date</label>
-          <input type="date" v-model="singleDate" />
+          <button
+            type="button"
+            :class="['preset-pill', { active: activePreset === 'all' }]"
+            @click="setPreset('all')"
+          >
+            All Data
+          </button>
+          <button
+            type="button"
+            :class="['preset-pill', { active: activePreset === 7 }]"
+            @click="setPreset(7)"
+          >
+            7 Days
+          </button>
+          <button
+            type="button"
+            :class="['preset-pill', { active: activePreset === 14 }]"
+            @click="setPreset(14)"
+          >
+            14 Days
+          </button>
+          <button
+            type="button"
+            :class="['preset-pill', { active: activePreset === 30 }]"
+            @click="setPreset(30)"
+          >
+            30 Days
+          </button>
+          <button
+            type="button"
+            :class="['preset-pill', { active: activePreset === 'month' }]"
+            @click="setPreset('month')"
+          >
+            This Month
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Period View: Running Daily Fluid Intake Chart -->
+    <!-- Fluid Intake Chart & Day Details -->
     <PeriodIntakeChart
-      v-if="reportType === 'period'"
-      :days="periodData?.days || []"
+      :days="reportData?.days || []"
       :fluid-limit="fluidLimit"
       :measurement-system="measurementSystem"
-      :is-loading="isPeriodLoading"
+      :is-loading="isLoading"
       :start-date="fromDate"
       :end-date="toDate"
-    />
-
-    <!-- Single Day View: Daily Report -->
-    <DailyReport
-      v-else
-      :report="dailyData"
-      :fluid-limit="fluidLimit"
-      :unit="unit"
-      :is-loading="isDailyLoading"
     />
 
     <!-- Export Action Buttons -->
@@ -365,33 +340,6 @@ const handleExport = (type) => {
   border-radius: 14px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   border: 1px solid #e2e8f0;
-}
-
-.toggle-group {
-  display: flex;
-  background: #f1f5f9;
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 14px;
-}
-
-.toggle-btn {
-  flex: 1;
-  padding: 8px 16px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.toggle-btn.active {
-  background: white;
-  color: #0f172a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .period-controls-wrapper {
@@ -462,6 +410,12 @@ const handleExport = (type) => {
   border-color: #cbd5e1;
 }
 
+.preset-pill.active {
+  background: #007BFF;
+  color: #ffffff;
+  border-color: #007BFF;
+}
+
 .report-actions {
   display: flex;
   justify-content: flex-end;
@@ -508,19 +462,6 @@ html.dark .report-controls {
   border-color: #333333;
 }
 
-html.dark .toggle-group {
-  background: #222222;
-}
-
-html.dark .toggle-btn {
-  color: #94a3b8;
-}
-
-html.dark .toggle-btn.active {
-  background: #333333;
-  color: #f8fafc;
-}
-
 html.dark .custom-input-group label {
   color: #94a3b8;
 }
@@ -546,5 +487,11 @@ html.dark .preset-pill:hover {
   background: #333333;
   color: #f8fafc;
   border-color: #444444;
+}
+
+html.dark .preset-pill.active {
+  background: #00CFFF;
+  color: #000000;
+  border-color: #00CFFF;
 }
 </style>

@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from fg_core.db.base import Base
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 def _create_engine(database_url: str, **engine_options: Any) -> Engine:
     if database_url.startswith("sqlite:"):

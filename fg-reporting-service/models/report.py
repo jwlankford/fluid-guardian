@@ -37,6 +37,7 @@ class PeriodDayData(BaseModel):
     intake_ml: int
     running_intake_ml: int
     event_count: int
+    events: list[FluidEventSchema] = []
 
 
 class PeriodReport(BaseModel):
