@@ -25,7 +25,7 @@ def get_today_summary(user_id: str, db: Session = Depends(get_session)):
     user_events = [
         event
         for event in events
-        if event.payload.get("user_id") == user_id
+        if event.payload.get("user_id") == user_id and event.payload.get("is_active", True)
     ]
     total = sum(
         int(event.payload["volume_ml"])
@@ -52,9 +52,12 @@ def reset_today(user_id: str, db: Session = Depends(get_session)):
     user_events = [
         event
         for event in events
-        if event.payload.get("user_id") == user_id
+        if event.payload.get("user_id") == user_id and event.payload.get("is_active", True)
     ]
     for event in user_events:
-        db.delete(event)
+        new_payload = dict(event.payload)
+        new_payload["is_active"] = False
+        event.payload = new_payload
+        db.add(event)
     db.commit()
-    return {"status": "success", "deleted": len(user_events)}
+    return {"status": "success", "deactivated": len(user_events)}

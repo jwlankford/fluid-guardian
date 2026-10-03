@@ -88,6 +88,7 @@ const handleGoogleLogin = async () => {
   width: 100%;
   padding: 20px;
   background: #F8F9FA;
+  overflow-y: auto;
 }
 
 .auth-card {
