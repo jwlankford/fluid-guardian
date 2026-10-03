@@ -1,7 +1,9 @@
 <script setup>
 import { inject, ref, watch, computed } from 'vue';
 import { api } from '../services/api';
-import { authService } from '../services/firebase';
+import { useAuth } from '../composables/useAuth';
+
+const { userProfile } = useAuth();
 
 const isDarkMode = inject('isDarkMode');
 const toggleTheme = inject('toggleTheme');
@@ -51,7 +53,7 @@ const displayUnit = computed(() => {
 const isCheckingOut = ref(false);
 const handleBuyCredits = async () => {
   try {
-    const uid = authService.currentUser?.uid;
+    const uid = userProfile.value?.uid;
     if (!uid) {
       alert("Please sign in to buy scans.");
       return;
