@@ -14,7 +14,11 @@ def get_user_events(
         .where(FluidEvent.occurred_at >= start, FluidEvent.occurred_at < end)
         .order_by(FluidEvent.occurred_at)
     ).all()
-    return [event for event in events if event.payload.get("user_id") == user_id]
+    return [
+        event 
+        for event in events 
+        if event.payload.get("user_id") == user_id and event.payload.get("is_active", True)
+    ]
 
 
 def utc_day_range(days: int) -> tuple[datetime, datetime]:

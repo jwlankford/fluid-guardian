@@ -275,10 +275,11 @@ body {
   width: 375px;
   height: 667px;
   background: #F8F9FA;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 button {
@@ -288,27 +289,34 @@ button {
 
 .app-shell {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-main {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: 10px;
-  padding-bottom: 80px; /* Space for the bottom nav */
+  padding-bottom: 16px;
 }
 
 .app-footer {
-  position: sticky;
-  bottom: 0;
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
   background-color: #007BFF;
   border-top: none;
   z-index: 50;
   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .bottom-nav {
@@ -334,6 +342,9 @@ button {
 }
 
 .app-header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -665,10 +676,27 @@ html.dark .reset-btn { border-color: #f87171; color: #f87171; }
 html.dark .reset-btn:hover { background-color: rgba(248, 113, 113, 0.1); }
 html.dark .symptom-item::before { color: #f87171; }
 
+/* Responsive Mobile Screen - Anchors app full viewport on phones */
+@media (max-width: 600px), (max-height: 500px) {
+  body {
+    align-items: stretch;
+    background-color: #F8F9FA;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
 
+  html.dark body {
+    background-color: #0A0A0A;
+  }
 
-
-
-
-
+  #app {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}
 </style>
