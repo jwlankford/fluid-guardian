@@ -7,17 +7,23 @@ from fg_core.models.fluid_event import FluidEvent
 
 
 def get_user_events(
-    db: Session, user_id: str, start: datetime, end: datetime
+    db: Session,
+    user_id: str,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> list[FluidEvent]:
-    events = db.scalars(
-        select(FluidEvent)
-        .where(FluidEvent.occurred_at >= start, FluidEvent.occurred_at < end)
-        .order_by(FluidEvent.occurred_at)
-    ).all()
+    query = select(FluidEvent)
+    if start is not None:
+        query = query.where(FluidEvent.occurred_at >= start)
+    if end is not None:
+        query = query.where(FluidEvent.occurred_at < end)
+    query = query.order_by(FluidEvent.occurred_at)
+
+    events = db.scalars(query).all()
     return [
         event 
         for event in events 
-        if event.payload.get("user_id") == user_id and event.payload.get("is_active", True)
+        if event.payload.get("user_id") == user_id
     ]
 
 

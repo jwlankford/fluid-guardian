@@ -67,11 +67,27 @@ const chartData = computed(() => {
       weekday,
       dailyVal,
       runningVal,
-      eventCount: d.event_count || 0,
+      eventCount: d.event_count || (d.events ? d.events.length : 0),
+      events: d.events || [],
       isOverLimit: dailyVal > currentLimit.value,
     };
   });
 });
+
+const formatEventTime = (isoString) => {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  return isNaN(d.getTime())
+    ? ""
+    : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+const formatEventVolume = (ml) => {
+  if (ml === undefined || ml === null) return "";
+  return props.measurementSystem === "ml"
+    ? `${Math.round(ml)} mL`
+    : `${Math.round(ml / 29.5735)} oz`;
+};
 
 // Summary calculations
 const totalIntake = computed(() => {
@@ -451,10 +467,36 @@ const handlePointClick = (idx) => {
             class="stat-number"
             :class="selectedDay.dailyVal > currentLimit ? 'danger-color' : 'safe-color'"
           >
-            {{ selectedDay.dailyVal > currentLimit ? '+' : '-' }}{{ Math.abs(selectedDay.dailyVal - currentLimit) }}
+            {{ selectedDay.dailyVal > currentLimit ? '+' : '' }}{{ selectedDay.dailyVal - currentLimit }}
             <small>{{ unit }}</small>
           </span>
         </div>
+      </div>
+
+      <!-- Logged Events for Selected Day -->
+      <div class="detail-events-section">
+        <h4 class="detail-events-title">
+          Events on {{ selectedDay.dateLabel }} ({{ selectedDay.events?.length || 0 }})
+        </h4>
+        <ul v-if="selectedDay.events && selectedDay.events.length > 0" class="detail-event-list">
+          <li v-for="(ev, eIdx) in selectedDay.events" :key="ev.id || eIdx" class="detail-event-row">
+            <div class="event-meta">
+              <span class="event-type-badge">
+                {{ ev.event_type === 'manual_intake' ? 'Manual Intake' : ev.event_type.replace(/_/g, ' ') }}
+              </span>
+              <span class="event-timestamp">{{ formatEventTime(ev.occurred_at) }}</span>
+            </div>
+            <div class="event-val">
+              <span v-if="ev.payload?.volume_ml !== undefined && ev.payload?.volume_ml !== null" class="event-volume-text">
+                {{ formatEventVolume(ev.payload.volume_ml) }}
+              </span>
+              <span v-else-if="ev.payload?.symptom" class="event-symptom-text">
+                ⚠️ {{ ev.payload.symptom }}
+              </span>
+            </div>
+          </li>
+        </ul>
+        <p v-else class="detail-no-events">No fluid events logged on this day.</p>
       </div>
     </div>
 
@@ -905,6 +947,98 @@ html.dark .pill-good {
 html.dark .pill-warning {
   background: #7f1d1d;
   color: #fca5a5;
+}
+
+.detail-events-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.detail-events-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px 0;
+}
+
+.detail-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-event-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-type-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.event-timestamp {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.event-volume-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #007BFF;
+}
+
+.event-symptom-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.detail-no-events {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 4px 0 0 0;
+}
+
+html.dark .detail-events-section {
+  border-top-color: #333333;
+}
+
+html.dark .detail-events-title {
+  color: #94a3b8;
+}
+
+html.dark .detail-event-row {
+  background: #262626;
+  border-color: #333333;
+}
+
+html.dark .event-type-badge {
+  color: #f8fafc;
+}
+
+html.dark .event-volume-text {
+  color: #00CFFF;
 }
 
 html.dark .badge-safe {

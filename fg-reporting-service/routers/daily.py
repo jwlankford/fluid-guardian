@@ -18,6 +18,8 @@ def get_daily_report(
     report_date: date | None = None,
     db: Session = Depends(get_session),
 ):
+    if not isinstance(report_date, date):
+        report_date = None
     target_date = report_date or datetime.now(timezone.utc).date()
     start = datetime.combine(target_date, time.min, tzinfo=timezone.utc)
     events = get_user_events(db, user_id, start, start + timedelta(days=1))
