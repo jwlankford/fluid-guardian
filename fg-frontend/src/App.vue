@@ -281,6 +281,20 @@ body {
   position: relative;
 }
 
+@media (max-width: 900px), (max-height: 700px) {
+  body {
+    display: block;
+    min-height: 100dvh;
+  }
+  #app {
+    width: 100%;
+    max-width: 640px;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+  }
+}
+
 button {
   font: inherit;
   cursor: pointer;
@@ -308,6 +322,7 @@ button {
   background-color: #007BFF;
   border-top: none;
   z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
